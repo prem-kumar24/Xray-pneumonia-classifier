@@ -5,7 +5,7 @@ import cv2
 from PIL import Image
 
 # ── Load saved model ────────────────────────────────
-model = tf.keras.models.load_model('pneumonia_cnn.h5')
+model = tf.keras.models.load_model('pneumonia_cnn.keras')
 class_names = ['NORMAL', 'PNEUMONIA']
 IMG_SIZE = (150, 150)
 
