@@ -4,10 +4,36 @@ import tensorflow as tf
 import cv2
 from PIL import Image
 
-# ── Load saved model ────────────────────────────────
-model = tf.keras.models.load_model('pneumonia_cnn.keras')
-class_names = ['NORMAL', 'PNEUMONIA']
 IMG_SIZE = (150, 150)
+class_names = ['NORMAL', 'PNEUMONIA']
+
+# ── Rebuild the EXACT same architecture as training ──
+data_augmentation = tf.keras.Sequential([
+    tf.keras.layers.RandomFlip('horizontal'),
+    tf.keras.layers.RandomRotation(0.1),
+    tf.keras.layers.RandomZoom(0.1),
+])
+normalization_layer = tf.keras.layers.Rescaling(1./255)
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Input(shape=(150, 150, 3)),
+    data_augmentation,
+    normalization_layer,
+    tf.keras.layers.Conv2D(32, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Conv2D(64, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Conv2D(128, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dropout(0.4),
+    tf.keras.layers.Dense(1, activation='sigmoid')
+])
+
+# Build the model by calling it once, then load trained weights
+model.build(input_shape=(None, 150, 150, 3))
+model.load_weights('pneumonia_cnn.weights.h5')
 
 # ── Find last conv layer automatically ──────────────
 last_conv_layer_name = None
@@ -57,7 +83,6 @@ if uploaded_file is not None:
     img = Image.open(uploaded_file).convert('RGB')
     img = img.resize(IMG_SIZE)
     img_array = np.array(img).astype('float32')
-
     input_array = np.expand_dims(img_array, axis=0)
 
     with st.spinner('Analyzing X-ray...'):
@@ -76,4 +101,4 @@ if uploaded_file is not None:
     with col1:
         st.image(img_array.astype('uint8'), caption="Original X-Ray", use_container_width=True)
     with col2:
-        st.image(overlayed_img, caption="Grad-CAM Heatmap (model ne yahan dekha)", use_container_width=True)
+        st.image(overlayed_img, caption="Grad-CAM Heatmap", use_container_width=True)
